@@ -7,6 +7,7 @@ import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Point;
+import android.graphics.PorterDuff;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
@@ -111,8 +112,10 @@ public class ImpressionistView extends View {
      * Clears the painting
      */
     public void clearPainting(){
-        //TODO
+            _offScreenCanvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
+            invalidate();
     }
+
 
     @Override
     public void onDraw(Canvas canvas) {
