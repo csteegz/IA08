@@ -7,17 +7,23 @@ import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Point;
+import android.graphics.PointF;
 import android.graphics.PorterDuff;
 import android.graphics.Rect;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.support.v4.view.VelocityTrackerCompat;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
+import android.view.VelocityTracker;
 import android.view.View;
 import android.widget.ImageView;
 
 import java.text.MessageFormat;
 import java.util.Random;
+
+import static edu.umd.hcil.impressionistpainter434.BrushType.*;
 
 /**
  * Created by jon on 3/20/2016.
@@ -36,8 +42,9 @@ public class ImpressionistView extends View {
     private long _lastPointTime = -1;
     private boolean _useMotionSpeedForBrushStrokeSize = true;
     private Paint _paintBorder = new Paint();
-    private BrushType _brushType = BrushType.Square;
+    private BrushType _brushType = Square;
     private float _minBrushRadius = 5;
+    private VelocityTracker v;
 
     public ImpressionistView(Context context) {
         super(context);
@@ -112,10 +119,9 @@ public class ImpressionistView extends View {
      * Clears the painting
      */
     public void clearPainting(){
-            _offScreenCanvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
-            invalidate();
+        _offScreenCanvas.drawColor(Color.WHITE, PorterDuff.Mode.CLEAR);
+        invalidate();
     }
-
 
     @Override
     public void onDraw(Canvas canvas) {
@@ -131,17 +137,98 @@ public class ImpressionistView extends View {
 
     @Override
     public boolean onTouchEvent(MotionEvent motionEvent){
+        float brushRadius = 15;
+        float curTouchX = motionEvent.getX() ;
+        float curTouchY = motionEvent.getY() ;
+        switch(motionEvent.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+                if (v == null) {
+                    v = VelocityTracker.obtain();
+                } else {
+                    v.clear();
+                }
+                v.addMovement(motionEvent);
+                break;
+            case MotionEvent.ACTION_MOVE:
+                v.addMovement(motionEvent);
+                int historySize = motionEvent.getHistorySize();
+                v.computeCurrentVelocity(1000);
+                double xV = VelocityTrackerCompat.getXVelocity(v, motionEvent.getPointerId(motionEvent.getActionIndex()));
+                double yV = VelocityTrackerCompat.getYVelocity(v, motionEvent.getPointerId(motionEvent.getActionIndex()));
+                double velocity = Math.sqrt(Math.pow(xV, 2) + Math.pow(yV, 2)) / 1000;
+                brushRadius = (float) velocity * brushRadius;
+                for (int i = 0; i < historySize; i++) {
+                    float touchX = motionEvent.getHistoricalX(i);
+                    float touchY = motionEvent.getHistoricalY(i);
+                    _paint.setColor(getColor(touchX,touchY));
+                    switch (_brushType) {
+                        case Circle:
+                            _offScreenCanvas.drawCircle(touchX, touchY, brushRadius, _paint);
+                            break;
+                        case Square:
+                            _offScreenCanvas.drawRect(touchX, touchY, touchX + brushRadius, touchY + brushRadius, _paint);
+                            break;
+                        case CircleSplatter:
+                            Random r = new Random();
+                            int num = r.nextInt(5) + 2;
+                            for (int j = 0; j < num; j++){
+                                float dx = (((float).5)-r.nextFloat()) * brushRadius;
+                                float dy = (((float).5)-r.nextFloat()) * brushRadius;
+                                float randRadius = r.nextFloat() * brushRadius/2;
+                                _paint.setColor(getColor(touchX+dx,touchY+dy));
+                                _offScreenCanvas.drawCircle(touchX+dx,touchY+dy,randRadius,_paint);
+                            }
+                            break;
 
-        //TODO
-        //Basically, the way this works is to liste for Touch Down and Touch Move events and determine where those
-        //touch locations correspond to the bitmap in the ImageView. You can then grab info about the bitmap--like the pixel color--
-        //at that location
-
-
+                    }
+                }
+                _paint.setColor(getColor(curTouchX,curTouchY));
+                switch (_brushType) {
+                    case Circle:
+                        _offScreenCanvas.drawCircle(curTouchX, curTouchY, brushRadius, _paint);
+                        break;
+                    case Square:
+                        _offScreenCanvas.drawRect(curTouchX, curTouchY, curTouchX + brushRadius, curTouchY + brushRadius, _paint);
+                        break;
+                    case CircleSplatter:
+                        Random r = new Random();
+                        int num = r.nextInt(5) + 2;
+                        for (int j = 0; j < num; j++){
+                            float dx = (((float).5)-r.nextFloat()) * brushRadius;
+                            float dy = (((float).5)-r.nextFloat()) * brushRadius;
+                            float randRadius = r.nextFloat() * brushRadius/2;
+                            _paint.setColor(getColor(curTouchX+dx,curTouchY+dy));
+                            _offScreenCanvas.drawCircle(curTouchX+dx,curTouchY+dy,randRadius,_paint);
+                        }
+                        break;
+                }
+                invalidate();
+                break;
+            case MotionEvent.ACTION_UP:
+                break;
+        }
         return true;
     }
 
-
+    private int getColor(float touchX, float touchY) {
+        ImageView imageView = _imageView;
+        Bitmap bitmap = ((BitmapDrawable)imageView.getDrawable()).getBitmap();
+        if (bitmap == null){
+            return Color.WHITE;
+        }
+        Rect r = getBitmapPositionInsideImageView(imageView);
+        touchX = touchX/r.width();
+        touchY = touchY/r.height();
+        int x = Math.round(touchX * bitmap.getWidth());
+        int y = Math.round(touchY * bitmap.getHeight());
+        int h = bitmap.getHeight();
+        int w = bitmap.getWidth();
+        if (x >= w || x <= 0 || y <= 0 || y >= h) {
+            return Color.WHITE;
+        }
+        int pixel = bitmap.getPixel(x,y);
+        return pixel;
+    }
 
 
     /**
