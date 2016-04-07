@@ -29,6 +29,7 @@ import java.util.UUID;
 
 public class MainActivity extends AppCompatActivity implements OnMenuItemClickListener {
 
+    private static final int RESULT_CAMERA_IMAGE = 2;
     private static int RESULT_LOAD_IMAGE = 1;
     private  ImpressionistView _impressionistView;
 
@@ -54,6 +55,7 @@ public class MainActivity extends AppCompatActivity implements OnMenuItemClickLi
             "http://www.cs.umd.edu/class/spring2016/cmsc434/assignments/IA08-AndroidII/Images/WhiteFlower_PhotoByJonFroehlich(Medium).JPG",
             "http://www.cs.umd.edu/class/spring2016/cmsc434/assignments/IA08-AndroidII/Images/YellowFlower_PhotoByJonFroehlich(Medium).JPG",
     };
+    private AlertDialog _loadAlert;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,6 +65,26 @@ public class MainActivity extends AppCompatActivity implements OnMenuItemClickLi
         _impressionistView = (ImpressionistView)findViewById(R.id.viewImpressionist);
         ImageView imageView = (ImageView)findViewById(R.id.viewImage);
         _impressionistView.setImageView(imageView);
+
+        _loadAlert = new AlertDialog.Builder(this).setTitle("Load Image").setNegativeButton("Cancel",null)
+                .setNeutralButton("Camera", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        Intent takePicture = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                        startActivityForResult(takePicture, RESULT_CAMERA_IMAGE);//zero can be replaced with any action code
+                    }
+                }).setPositiveButton("Gallery", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+
+
+                        Intent i = new Intent(
+                                Intent.ACTION_PICK,
+                                android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+
+                        startActivityForResult(i, RESULT_LOAD_IMAGE);
+                    }
+                }).create();
 
     }
 
@@ -96,17 +118,9 @@ public class MainActivity extends AppCompatActivity implements OnMenuItemClickLi
                 Toast.makeText(this, "Square Brush", Toast.LENGTH_SHORT).show();
                 _impressionistView.setBrushType(BrushType.Square);
                 return true;
-            case R.id.menuLine:
-                Toast.makeText(this, "Line Brush", Toast.LENGTH_SHORT).show();
-                _impressionistView.setBrushType(BrushType.Line);
-                return true;
             case R.id.menuCircleSplatter:
                 Toast.makeText(this, "Circle Splatter Brush", Toast.LENGTH_SHORT).show();
                 _impressionistView.setBrushType(BrushType.CircleSplatter);
-                return true;
-            case R.id.menuLineSplatter:
-                Toast.makeText(this, "Line Splatter Brush", Toast.LENGTH_SHORT).show();
-                _impressionistView.setBrushType(BrushType.LineSplatter);
                 return true;
         }
         return false;
@@ -168,15 +182,10 @@ public class MainActivity extends AppCompatActivity implements OnMenuItemClickLi
      * @param v
      */
     public void onButtonClickLoadImage(View v){
-
-        // Without this call, the app was crashing in the onActivityResult method when trying to read from file system
         FileUtils.verifyStoragePermissions(this);
+        _loadAlert.show();
+        // Without this call, the app was crashing in the onActivityResult method when trying to read from file system
 
-        Intent i = new Intent(
-                Intent.ACTION_PICK,
-                android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-
-        startActivityForResult(i, RESULT_LOAD_IMAGE);
     }
 
     /**
@@ -190,7 +199,7 @@ public class MainActivity extends AppCompatActivity implements OnMenuItemClickLi
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        if (requestCode == RESULT_LOAD_IMAGE && resultCode == RESULT_OK && null != data) {
+        if ((requestCode == RESULT_LOAD_IMAGE||requestCode == RESULT_CAMERA_IMAGE) && resultCode == RESULT_OK && null != data) {
             Uri imageUri = data.getData();
 
             try {
