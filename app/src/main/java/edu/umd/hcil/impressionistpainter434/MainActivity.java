@@ -66,8 +66,8 @@ public class MainActivity extends AppCompatActivity implements OnMenuItemClickLi
         ImageView imageView = (ImageView)findViewById(R.id.viewImage);
         _impressionistView.setImageView(imageView);
 
-        _loadAlert = new AlertDialog.Builder(this).setTitle("Load Image").setNegativeButton("Cancel",null)
-                .setNeutralButton("Camera", new DialogInterface.OnClickListener() {
+        _loadAlert = new AlertDialog.Builder(this).setTitle("Load Image").setNeutralButton("Cancel",null)
+                .setNegativeButton("Camera", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         Intent takePicture = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
@@ -223,7 +223,8 @@ public class MainActivity extends AppCompatActivity implements OnMenuItemClickLi
         saveDialog.setMessage("Save drawing to device Gallery?");
         saveDialog.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int which) {
-                _impressionistView.setDrawingCacheEnabled(true);
+                _impressionistView.destroyDrawingCache();
+                _impressionistView.buildDrawingCache();
                 String imgSaved = MediaStore.Images.Media.insertImage(
                         getContentResolver(), _impressionistView.getDrawingCache(),
                         UUID.randomUUID().toString() + ".png", "drawing");
@@ -245,5 +246,9 @@ public class MainActivity extends AppCompatActivity implements OnMenuItemClickLi
             }
         });
         saveDialog.show();
+    }
+
+    public void sortPixels(View v){
+        _impressionistView.sortImage();
     }
 }

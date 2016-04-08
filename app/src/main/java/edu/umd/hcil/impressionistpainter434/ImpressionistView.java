@@ -21,6 +21,7 @@ import android.view.View;
 import android.widget.ImageView;
 
 import java.text.MessageFormat;
+import java.util.Arrays;
 import java.util.Random;
 
 import static edu.umd.hcil.impressionistpainter434.BrushType.*;
@@ -119,7 +120,7 @@ public class ImpressionistView extends View {
      * Clears the painting
      */
     public void clearPainting(){
-        _offScreenCanvas.drawColor(Color.WHITE, PorterDuff.Mode.CLEAR);
+        _offScreenCanvas.drawColor(Color.WHITE);
         invalidate();
     }
 
@@ -228,6 +229,17 @@ public class ImpressionistView extends View {
         }
         int pixel = bitmap.getPixel(x,y);
         return pixel;
+    }
+
+    public void sortImage(){
+        //IDea borrowed from http://codegolf.stackexchange.com/questions/62686/sort-the-pixels
+        int width = _offScreenBitmap.getWidth();
+        int height = _offScreenBitmap.getHeight();
+        int pixels[] = new int[width*height];
+        _offScreenBitmap.getPixels(pixels,0,width,0,0,width,height);
+        Arrays.sort(pixels);
+        _offScreenBitmap.setPixels(pixels,0,width,0,0,width,height);
+        invalidate();
     }
 
 
